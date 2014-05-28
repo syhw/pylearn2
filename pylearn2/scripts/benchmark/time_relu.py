@@ -53,6 +53,9 @@ def relu__(x):
     """
     return T.switch(x < 0., 0., x)
 
+def relu___(x):
+    return (x + abs(x)) / 2
+
 
 def test_scalar_rectifier():
     """
@@ -62,10 +65,12 @@ def test_scalar_rectifier():
     y1 = relu(x)
     y3 = relu_(x)
     y4 = relu__(x)
+    y5 = relu___(x)
 
     f1 = theano.function(inputs=[x], outputs=y1, name='benchmark_1_forward')
     f3 = theano.function(inputs=[x], outputs=y3, name='benchmark_3_forward')
     f4 = theano.function(inputs=[x], outputs=y4, name='benchmark_4_forward')
+    f5 = theano.function(inputs=[x], outputs=y5, name='benchmark_5_forward')
 
     g1 = theano.function(inputs=[x], outputs=T.grad(y1.sum(),x),
             name='benchmark_1_grad')
@@ -73,6 +78,8 @@ def test_scalar_rectifier():
             name='benchmark_3_grad')
     g4 = theano.function(inputs=[x], outputs=T.grad(y4.sum(),x),
             name='benchmark_4_grad')
+    g5 = theano.function(inputs=[x], outputs=T.grad(y5.sum(),x),
+            name='benchmark_5_grad')
 
     for i in range(10):
         value = numpy.random.uniform(-1,1,size=(100,500)).astype(floatX)
@@ -83,11 +90,17 @@ def test_scalar_rectifier():
         numpy.testing.assert_array_equal(f1(value), f4(value),
                                          err_msg='arrays not equal' )
 
+        numpy.testing.assert_array_equal(f1(value), f5(value),
+                                         err_msg='arrays not equal' )
+
 
         numpy.testing.assert_array_equal(g1(value), g3(value),
                                          err_msg='grad:arrays not equal' )
 
         numpy.testing.assert_array_equal(g1(value), g4(value),
+                                         err_msg='grad:arrays not equal' )
+
+        numpy.testing.assert_array_equal(g1(value), g5(value),
                                          err_msg='grad:arrays not equal' )
 
 
@@ -101,13 +114,15 @@ def benchmark_relu():
         relu_(x).sum(), # old
         relu(x).sum(), # alter, short for alternative
         relu__(x).sum(), # alter 2
+        relu___(x).sum(), # alter 3
         T.grad(relu_(x).sum(),x), # grad_old
         T.grad(relu(x).sum(),x), # grad_alter
         T.grad(relu__(x).sum(),x), # grad_alter2
+        T.grad(relu___(x).sum(),x), # grad_alter3
     ]
 
-    names = ['fprop_old', 'fprop_alter', 'fprop_alter2',
-             'grad_old', 'grad_alter', 'grad_alter2']
+    names = ['fprop_old', 'fprop_alter', 'fprop_alter2', 'fprop_alter3',
+             'grad_old', 'grad_alter', 'grad_alter2', 'grad_alter3']
 
 
     value = numpy.random.uniform(size=(512,32,32,100)).astype(floatX)
